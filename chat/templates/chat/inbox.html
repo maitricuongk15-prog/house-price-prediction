@@ -1,0 +1,74 @@
+{% extends 'predictor/base.html' %}
+{% block title %}Hộp thư{% endblock %}
+
+{% block content %}
+<style>
+.inbox-name { font-size:15px; font-weight:400; }
+.inbox-unread { font-weight:700; }
+.inbox-preview { font-size:13px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.inbox-preview-unread { color:var(--text); font-weight:600; }
+</style>
+<div class="container page">
+  <div class="flex-between mb-24">
+    <div>
+      <div class="section-title">💬 Hộp thư</div>
+      <div class="section-sub">Các cuộc trò chuyện của bạn</div>
+    </div>
+  </div>
+
+  {% if room_data %}
+    <div style="max-width:680px;display:flex;flex-direction:column;gap:2px">
+      {% for rd in room_data %}
+      <a href="{% url 'chat_room' rd.room.pk %}" style="text-decoration:none;color:inherit">
+        <div style="display:flex;align-items:center;gap:14px;padding:14px 16px;background:#fff;border:1px solid var(--border);border-radius:10px;transition:box-shadow .15s"
+             onmouseover="this.style.boxShadow='0 2px 12px rgba(0,0,0,0.08)'"
+             onmouseout="this.style.boxShadow='none'">
+
+          <!-- Avatar -->
+          <div style="width:46px;height:46px;background:var(--green);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:18px;flex-shrink:0;position:relative">
+            {{ rd.other.username|first|upper }}
+            {% if rd.unread %}
+              <span style="position:absolute;top:-2px;right:-2px;background:#dc2626;color:#fff;font-size:10px;font-weight:700;border-radius:50%;width:18px;height:18px;display:flex;align-items:center;justify-content:center">
+                {{ rd.unread }}
+              </span>
+            {% endif %}
+          </div>
+
+          <!-- Content -->
+          <div style="flex:1;min-width:0">
+            <div style="display:flex;justify-content:space-between;align-items:baseline">
+              <span class="inbox-name {% if rd.unread %}inbox-unread{% endif %}">
+                {{ rd.other.username }}
+              </span>
+              {% if rd.last_msg %}
+                <span style="font-size:12px;color:var(--muted)">{{ rd.last_msg.created_at|date:"H:i" }}</span>
+              {% endif %}
+            </div>
+            <div style="font-size:12px;color:var(--muted);margin-bottom:2px">
+              🏠 {{ rd.room.listing_title|truncatechars:45 }}
+            </div>
+            {% if rd.last_msg %}
+              <div class="inbox-preview {% if rd.unread %}inbox-preview-unread{% endif %}">
+                {% if rd.last_msg.sender == request.user %}Bạn: {% endif %}
+                {{ rd.last_msg.content|truncatechars:60 }}
+              </div>
+            {% else %}
+              <div style="font-size:13px;color:var(--muted);font-style:italic">Chưa có tin nhắn</div>
+            {% endif %}
+          </div>
+
+          <div style="color:var(--muted);font-size:18px">›</div>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+
+  {% else %}
+    <div class="empty-state">
+      <div class="icon">💬</div>
+      <p>Chưa có cuộc trò chuyện nào.</p>
+      <a href="{% url 'listing_list' %}" class="btn btn-outline btn-sm mt-12">Tìm nhà để hỏi mua</a>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

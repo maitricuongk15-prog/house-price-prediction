@@ -1,0 +1,246 @@
+{% extends 'predictor/base.html' %}
+{% block title %}Nhà đất{% endblock %}
+
+{% block content %}
+<div class="container page">
+  <div class="flex-between mb-16">
+    <div>
+      <div class="section-title">🏘 Bất động sản đang rao bán</div>
+      <div class="section-sub">Hiện đang có <strong>{{ listings.count }}</strong> tin rao đang hoạt động</div>
+    </div>
+    {% if user.is_authenticated %}
+      <a href="{% url 'listing_create' %}" class="btn btn-primary">+ Đăng tin</a>
+    {% endif %}
+  </div>
+
+  <!-- Top filter: tìm kiếm + loại BĐS + tỉnh thành -->
+  <form method="get" id="filter-form" class="filter-bar">
+    <div class="filter-group" style="flex:2;min-width:200px">
+      <label>Tìm kiếm</label>
+      <input class="form-input" name="q" placeholder="Tiêu đề, địa chỉ..." value="{{ params.q }}">
+    </div>
+    <div class="filter-group">
+      <label>Loại BĐS</label>
+      <select class="form-input" name="property_type">
+        <option value="">Tất cả</option>
+        {% for val, label in property_type_choices %}
+          <option value="{{ val }}" {% if params.property_type == val %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="filter-group">
+      <label>Tỉnh / thành</label>
+      <select class="form-input" name="city">
+        <option value="">Tất cả</option>
+        {% for val, label in city_choices %}
+          <option value="{{ val }}" {% if params.city == val %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <!-- Giá / diện tích tuỳ chỉnh - giữ lại cho ai muốn nhập tay -->
+    <div class="filter-group">
+      <label>Giá từ (tỷ)</label>
+      <input class="form-input" type="number" name="min_price" id="min_price" placeholder="0" step="0.1" value="{{ params.min_price }}" style="width:90px">
+    </div>
+    <div class="filter-group">
+      <label>Giá đến (tỷ)</label>
+      <input class="form-input" type="number" name="max_price" id="max_price" placeholder="∞" step="0.1" value="{{ params.max_price }}" style="width:90px">
+    </div>
+    <div class="filter-group">
+      <label>Diện tích từ (m²)</label>
+      <input class="form-input" type="number" name="min_area" id="min_area" placeholder="0" value="{{ params.min_area }}" style="width:100px">
+    </div>
+    <div class="filter-group">
+      <label>Diện tích đến (m²)</label>
+      <input class="form-input" type="number" name="max_area" id="max_area" placeholder="∞" value="{{ params.max_area }}" style="width:100px">
+    </div>
+
+    <button type="submit" class="btn btn-primary btn-sm" style="align-self:flex-end">Lọc</button>
+    <a href="{% url 'listing_list' %}" class="btn btn-outline btn-sm" style="align-self:flex-end">Xoá lọc</a>
+  </form>
+
+  <!-- Layout 2 cột: danh sách + sidebar chip lọc nhanh -->
+  <div class="listing-layout mt-16">
+
+    <!-- ─── Cột trái: kết quả ─────────────────────────── -->
+    <div>
+      {% if listings %}
+        <div class="grid-3">
+          {% for l in listings %}
+          <a href="{% url 'listing_detail' l.pk %}" style="text-decoration:none;color:inherit">
+            <div class="card">
+              {% if l.image %}
+                <img class="card-img" src="{{ l.image.url }}" alt="{{ l.title }}">
+              {% else %}
+                <div class="card-img-placeholder">🏡</div>
+              {% endif %}
+              <div class="card-body">
+                <div class="flex-between">
+                  <div class="card-title">{{ l.title }}</div>
+                </div>
+                <span class="badge badge-gold mt-4" style="display:inline-block">{{ l.get_property_type_display }}</span>
+                <div class="flex-between mt-4">
+                  <div class="card-price">{{ l.price }} tỷ</div>
+                  {% if l.predicted_price %}
+                    {% with diff=l.price_diff %}
+                      {% if diff is not None %}
+                        {% if diff > 10 %}
+                          <span class="badge badge-red">+{{ diff }}% so ML</span>
+                        {% elif diff < -10 %}
+                          <span class="badge badge-green">{{ diff }}% so ML</span>
+                        {% else %}
+                          <span class="badge badge-gold">~Giá ML</span>
+                        {% endif %}
+                      {% endif %}
+                    {% endwith %}
+                  {% endif %}
+                </div>
+                {% if l.predicted_price %}
+                  <div class="mt-4"><span class="ml-tag">🤖 ML: {{ l.predicted_price }} tỷ</span></div>
+                {% endif %}
+                <div class="card-meta mt-8">
+                  <span>📐 {{ l.area }}m²</span>
+                  {% if l.property_type == 'dat_nen' %}
+                    {% if l.facade_width %}<span>↔ {{ l.facade_width }}m mặt tiền</span>{% endif %}
+                  {% elif l.property_type == 'chung_cu' %}
+                    {% if l.bedrooms %}<span>🛏 {{ l.bedrooms }}</span>{% endif %}
+                    {% if l.bathrooms %}<span>🚿 {{ l.bathrooms }}</span>{% endif %}
+                    {% if l.floor_number %}<span>🏢 Tầng {{ l.floor_number }}</span>{% endif %}
+                  {% else %}
+                    {% if l.bedrooms %}<span>🛏 {{ l.bedrooms }}</span>{% endif %}
+                    {% if l.bathrooms %}<span>🚿 {{ l.bathrooms }}</span>{% endif %}
+                    {% if l.floors %}<span>🏢 {{ l.floors }} tầng</span>{% endif %}
+                  {% endif %}
+                </div>
+                <div class="card-city mt-4">📍 {{ l.city }}</div>
+              </div>
+            </div>
+          </a>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="empty-state">
+          <div class="icon">🔍</div>
+          <p>Không tìm thấy tin rao phù hợp.</p>
+          <a href="{% url 'listing_list' %}" class="btn btn-outline btn-sm mt-12">Xem tất cả tin</a>
+        </div>
+      {% endif %}
+    </div>
+
+    <!-- ─── Cột phải: sidebar chip lọc nhanh ─────────────── -->
+    <div>
+      <div class="sidebar-card mb-16">
+        <div class="sidebar-title">Lọc theo khoảng giá</div>
+        <div class="chip-list">
+          <button type="button" class="chip" data-min="" data-max="">Thoả thuận</button>
+          <button type="button" class="chip" data-min="" data-max="0.5">Dưới 500 triệu</button>
+          <button type="button" class="chip" data-min="0.5" data-max="0.8">500 - 800 triệu</button>
+          <button type="button" class="chip" data-min="0.8" data-max="1">800 triệu - 1 tỷ</button>
+          <button type="button" class="chip" data-min="1" data-max="2">1 - 2 tỷ</button>
+          <button type="button" class="chip" data-min="2" data-max="3">2 - 3 tỷ</button>
+          <button type="button" class="chip" data-min="3" data-max="5">3 - 5 tỷ</button>
+          <button type="button" class="chip" data-min="5" data-max="7">5 - 7 tỷ</button>
+          <button type="button" class="chip" data-min="7" data-max="10">7 - 10 tỷ</button>
+          <button type="button" class="chip" data-min="10" data-max="">Trên 10 tỷ</button>
+        </div>
+      </div>
+
+      <div class="sidebar-card">
+        <div class="sidebar-title">Lọc theo diện tích</div>
+        <div class="chip-list">
+          <button type="button" class="chip area-chip" data-min="" data-max="30">Dưới 30m²</button>
+          <button type="button" class="chip area-chip" data-min="30" data-max="50">30 - 50m²</button>
+          <button type="button" class="chip area-chip" data-min="50" data-max="80">50 - 80m²</button>
+          <button type="button" class="chip area-chip" data-min="80" data-max="100">80 - 100m²</button>
+          <button type="button" class="chip area-chip" data-min="100" data-max="150">100 - 150m²</button>
+          <button type="button" class="chip area-chip" data-min="150" data-max="">Trên 150m²</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<style>
+.listing-layout {
+  display: grid;
+  grid-template-columns: 1fr 280px;
+  gap: 24px;
+}
+@media (max-width: 900px) {
+  .listing-layout { grid-template-columns: 1fr; }
+}
+
+.sidebar-title {
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid var(--green);
+  display: inline-block;
+}
+
+.chip-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.chip {
+  text-align: left;
+  background: transparent;
+  border: none;
+  padding: 8px 4px;
+  font-size: 14px;
+  color: var(--text);
+  cursor: pointer;
+  border-radius: 6px;
+  transition: background .15s, color .15s;
+}
+.chip:hover { background: var(--green-lt); color: var(--green); }
+.chip.active { background: var(--green); color: #fff; font-weight: 600; }
+</style>
+
+<script>
+const form = document.getElementById('filter-form');
+
+// Chip giá
+document.querySelectorAll('.chip:not(.area-chip)').forEach(chip => {
+  chip.addEventListener('click', () => {
+    document.getElementById('min_price').value = chip.dataset.min;
+    document.getElementById('max_price').value = chip.dataset.max;
+    form.submit();
+  });
+});
+
+// Chip diện tích
+document.querySelectorAll('.area-chip').forEach(chip => {
+  chip.addEventListener('click', () => {
+    document.getElementById('min_area').value = chip.dataset.min;
+    document.getElementById('max_area').value = chip.dataset.max;
+    form.submit();
+  });
+});
+
+// Highlight chip đang active dựa theo query string hiện tại
+(function highlightActiveChips() {
+  const params = new URLSearchParams(window.location.search);
+  const minP = params.get('min_price') || '';
+  const maxP = params.get('max_price') || '';
+  const minA = params.get('min_area') || '';
+  const maxA = params.get('max_area') || '';
+
+  document.querySelectorAll('.chip:not(.area-chip)').forEach(chip => {
+    if (chip.dataset.min === minP && chip.dataset.max === maxP && (minP || maxP)) {
+      chip.classList.add('active');
+    }
+  });
+  document.querySelectorAll('.area-chip').forEach(chip => {
+    if (chip.dataset.min === minA && chip.dataset.max === maxA && (minA || maxA)) {
+      chip.classList.add('active');
+    }
+  });
+})();
+</script>
+{% endblock %}

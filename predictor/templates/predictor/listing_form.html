@@ -1,0 +1,151 @@
+{% extends 'predictor/base.html' %}
+{% block title %}{{ action }} tin rao{% endblock %}
+
+{% block content %}
+<div class="container page">
+  <div class="text-center mb-24">
+    <div class="section-title" style="font-size:26px">🏠 {{ action }} bất động sản</div>
+    <div class="section-sub">Chọn loại BĐS để hiển thị đúng thông tin cần điền</div>
+  </div>
+
+  <div class="form-card" style="max-width:720px">
+    <form method="post" enctype="multipart/form-data" id="listing-form">
+      {% csrf_token %}
+
+      <div class="form-group full mb-16">
+        <label>{{ form.title.label }}</label>
+        {{ form.title }}
+        {% if form.title.errors %}<ul class="errorlist">{% for e in form.title.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+      </div>
+
+      <!-- Loại BĐS - đặt riêng, nổi bật -->
+      <div class="form-group full mb-16">
+        <label>{{ form.property_type.label }}</label>
+        {{ form.property_type }}
+      </div>
+
+      <div class="form-grid">
+        <div class="form-group">
+          <label>{{ form.city.label }}</label>
+          {{ form.city }}
+        </div>
+        <div class="form-group">
+          <label>{{ form.address.label }}</label>
+          {{ form.address }}
+        </div>
+
+        <div class="form-group">
+          <label>{{ form.area.label }}</label>
+          {{ form.area }}
+          {% if form.area.errors %}<ul class="errorlist">{% for e in form.area.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+        </div>
+        <div class="form-group">
+          <label>{{ form.price.label }} (tỷ VNĐ)</label>
+          {{ form.price }}
+          {% if form.price.errors %}<ul class="errorlist">{% for e in form.price.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+        </div>
+
+        <!-- ── Field: Nhà phố / Biệt thự ─────────────────── -->
+        <div class="form-group field-house">
+          <label>{{ form.floors.label }}</label>
+          {{ form.floors }}
+          {% if form.floors.errors %}<ul class="errorlist">{% for e in form.floors.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+        </div>
+
+        <!-- ── Field: Nhà phố / Biệt thự / Chung cư ──────── -->
+        <div class="form-group field-house field-apartment">
+          <label>{{ form.bedrooms.label }}</label>
+          {{ form.bedrooms }}
+          {% if form.bedrooms.errors %}<ul class="errorlist">{% for e in form.bedrooms.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+        </div>
+
+        <div class="form-group field-house field-apartment">
+          <label>{{ form.bathrooms.label }}</label>
+          {{ form.bathrooms }}
+          {% if form.bathrooms.errors %}<ul class="errorlist">{% for e in form.bathrooms.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+        </div>
+
+        <!-- ── Field: Nhà phố / Biệt thự / Đất nền ───────── -->
+        <div class="form-group field-house field-land">
+          <label>{{ form.facade_width.label }}</label>
+          {{ form.facade_width }}
+          {% if form.facade_width.errors %}<ul class="errorlist">{% for e in form.facade_width.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+        </div>
+
+        <!-- ── Field: Chung cư ────────────────────────────── -->
+        <div class="form-group field-apartment">
+          <label>{{ form.building_name.label }}</label>
+          {{ form.building_name }}
+        </div>
+        <div class="form-group field-apartment">
+          <label>{{ form.floor_number.label }}</label>
+          {{ form.floor_number }}
+        </div>
+
+        <!-- ── Field: Đất nền ─────────────────────────────── -->
+        <div class="form-group field-land">
+          <label>{{ form.road_width.label }}</label>
+          {{ form.road_width }}
+          {% if form.road_width.errors %}<ul class="errorlist">{% for e in form.road_width.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+        </div>
+
+        <div class="form-group">
+          <label>{{ form.legal_status.label }}</label>
+          {{ form.legal_status }}
+        </div>
+        <div class="form-group">
+          <label>{{ form.furniture.label }}</label>
+          {{ form.furniture }}
+        </div>
+
+        <div class="form-group">
+          <label>{{ form.image.label }}</label>
+          {{ form.image }}
+        </div>
+
+        <div class="form-group full">
+          <label>{{ form.description.label }}</label>
+          {{ form.description }}
+        </div>
+      </div>
+
+      <div style="background:var(--green-lt);border:1px solid #a7d7bc;border-radius:8px;padding:12px 16px;margin-top:16px;font-size:13px;color:var(--green)">
+        🤖 <strong>Gợi ý AI:</strong> Sau khi lưu, hệ thống sẽ tự tính giá dự đoán ML và hiển thị bên cạnh giá bạn đặt để người mua tham khảo.
+      </div>
+
+      <div class="flex gap-8 mt-24">
+        <button type="submit" class="btn btn-primary" style="flex:1;font-size:15px;padding:12px">
+          💾 {{ action }}
+        </button>
+        <a href="{% url 'listing_list' %}" class="btn btn-outline" style="flex:0 0 auto">Huỷ</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+// Toggle hiển thị field theo loại BĐS được chọn
+const FIELD_MAP = {
+  nha_pho:  ['field-house'],
+  biet_thu: ['field-house'],
+  chung_cu: ['field-apartment'],
+  dat_nen:  ['field-land'],
+};
+
+const typeSelect = document.getElementById('id_property_type');
+const allGroups   = document.querySelectorAll('.form-group[class*="field-"]');
+
+function updateFields() {
+  const selected = typeSelect.value;
+  const showClasses = FIELD_MAP[selected] || [];
+
+  allGroups.forEach(group => {
+    const matches = showClasses.some(cls => group.classList.contains(cls));
+    group.style.display = matches ? '' : 'none';
+  });
+}
+
+typeSelect.addEventListener('change', updateFields);
+updateFields(); // chạy lần đầu khi load trang (edit mode giữ giá trị cũ)
+</script>
+{% endblock %}

@@ -1,0 +1,125 @@
+{% load static %}
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>
+      {% block title %}NhàAI{% endblock %} – Dự đoán giá nhà thông minh
+    </title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="{% static 'css/main.css' %}" />
+  </head>
+  <body>
+    <nav class="navbar">
+      <div class="nav-inner">
+        <a class="nav-brand" href="{% url 'home' %}">Nhà<span>AI</span></a>
+        <div class="nav-links">
+          <a
+            href="{% url 'home' %}"
+            {%
+            if
+            request.resolver_match.url_name=""
+            ="home"
+            %}class="active"
+            {%
+            endif
+            %}
+            >Trang chủ</a
+          >
+          <a
+            href="{% url 'predict' %}"
+            {%
+            if
+            request.resolver_match.url_name=""
+            ="predict"
+            %}class="active"
+            {%
+            endif
+            %}
+            >Dự đoán giá</a
+          >
+          <a
+            href="{% url 'listing_list' %}"
+            {%
+            if
+            request.resolver_match.url_name=""
+            ="listing_list"
+            %}class="active"
+            {%
+            endif
+            %}
+            >Nhà đất</a
+          >
+        </div>
+        <div class="nav-auth">
+          {% if user.is_authenticated %}
+          <a
+            href="{% url 'inbox' %}"
+            title="Hộp thư"
+            style="
+              padding: 6px 8px;
+              color: var(--muted);
+              font-size: 20px;
+              text-decoration: none;
+              line-height: 1;
+            "
+            {%
+            if
+            request.resolver_match.url_name=""
+            ="inbox"
+            %}style="color:var(--green)"
+            {%
+            endif
+            %}
+          >
+            💬
+          </a>
+          <a href="{% url 'listing_create' %}" class="btn btn-primary btn-sm"
+            >+ Đăng tin</a
+          >
+          <a href="{% url 'profile' %}" class="btn btn-outline btn-sm"
+            >{{ user.username }}</a
+          >
+          <a
+            href="{% url 'logout' %}"
+            class="text-muted"
+            style="font-size: 13px"
+            >Đăng xuất</a
+          >
+          {% else %}
+          <a href="{% url 'login' %}" class="btn btn-outline btn-sm"
+            >Đăng nhập</a
+          >
+          <a href="{% url 'register' %}" class="btn btn-primary btn-sm"
+            >Đăng ký</a
+          >
+          {% endif %}
+        </div>
+      </div>
+    </nav>
+
+    <main>
+      {% if messages %}
+      <div class="container" style="padding-top: 16px">
+        <ul class="messages">
+          {% for msg in messages %}
+          <li class="{{ msg.tags }}">{{ msg }}</li>
+          {% endfor %}
+        </ul>
+      </div>
+      {% endif %} {% block content %}{% endblock %}
+    </main>
+
+    <footer>
+      <div class="container">
+        NhàAI &copy; 2025 – Dự đoán giá nhà bằng Machine Learning &nbsp;·&nbsp;
+        Dữ liệu mang tính tham khảo
+      </div>
+    </footer>
+  </body>
+</html>

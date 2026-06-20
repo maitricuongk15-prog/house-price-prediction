@@ -1,0 +1,155 @@
+{% extends 'predictor/base.html' %}
+{% block title %}{{ listing.title }}{% endblock %}
+
+{% block content %}
+<div class="container page">
+  <!-- Breadcrumb -->
+  <div style="font-size:13px;color:var(--muted);margin-bottom:16px">
+    <a href="{% url 'home' %}">Trang chủ</a> / 
+    <a href="{% url 'listing_list' %}">Nhà đất</a> / 
+    {{ listing.title }}
+  </div>
+
+  <!-- Image -->
+  {% if listing.image %}
+    <img class="detail-hero" src="{{ listing.image.url }}" alt="{{ listing.title }}">
+  {% else %}
+    <div class="detail-hero-placeholder">🏡</div>
+  {% endif %}
+
+  <div class="detail-layout">
+    <!-- Left: Info -->
+    <div>
+      <div style="font-size:22px;font-weight:700;margin-top:0">{{ listing.title }}</div>
+      <div class="mt-4 mb-4">
+        <span class="badge badge-gold">{{ listing.get_property_type_display }}</span>
+      </div>
+      <div style="color:var(--muted);font-size:14px;margin:4px 0 12px">📍 {{ listing.address }}, {{ listing.city }}</div>
+
+      <!-- Price row -->
+      <div class="flex" style="align-items:baseline;gap:16px;flex-wrap:wrap">
+        <div class="detail-price">{{ listing.price }} tỷ VNĐ</div>
+        {% if listing.predicted_price %}
+          <div>
+            <span class="ml-tag">🤖 Giá ML: {{ listing.predicted_price }} tỷ</span>
+            {% with diff=listing.price_diff %}
+              {% if diff is not None %}
+                {% if diff > 10 %}
+                  <span class="badge badge-red ml-4">Cao hơn ML {{ diff }}%</span>
+                {% elif diff < -10 %}
+                  <span class="badge badge-green ml-4">Thấp hơn ML {{ diff|floatformat:0 }}%</span>
+                {% else %}
+                  <span class="badge badge-gold ml-4">Sát giá ML</span>
+                {% endif %}
+              {% endif %}
+            {% endwith %}
+          </div>
+        {% elif listing.property_type == 'dat_nen' %}
+          <span class="text-muted" style="font-size:12px">
+            ℹ️ Mô hình ML hiện chưa hỗ trợ định giá đất nền
+          </span>
+        {% endif %}
+      </div>
+      {% if listing.property_type == 'dat_nen' and listing.predicted_price %}
+        <div style="font-size:12px;color:var(--muted);margin-top:6px">
+          ⚠️ Model ML hiện được train chủ yếu trên nhà có phòng ở — giá dự đoán cho đất nền chỉ mang tính tham khảo thô.
+        </div>
+      {% endif %}
+
+      <hr class="divider">
+
+      <!-- Specs (động theo loại BĐS) -->
+      <div class="detail-meta">
+        {% for field_name, value, label in listing.relevant_fields %}
+        <div class="detail-meta-item">
+          <span class="val">{{ value }}</span>
+          <span class="key">{{ label }}</span>
+        </div>
+        {% endfor %}
+        <div class="detail-meta-item">
+          <span class="val">{{ listing.get_legal_status_display }}</span>
+          <span class="key">Pháp lý</span>
+        </div>
+        <div class="detail-meta-item">
+          <span class="val">{{ listing.get_furniture_display }}</span>
+          <span class="key">Nội thất</span>
+        </div>
+      </div>
+
+      {% if listing.description %}
+        <hr class="divider">
+        <div style="font-weight:600;margin-bottom:8px">Mô tả</div>
+        <div style="color:#374151;line-height:1.8;white-space:pre-line">{{ listing.description }}</div>
+      {% endif %}
+
+      <!-- Owner actions -->
+      {% if user == listing.owner %}
+        <hr class="divider">
+        <div class="flex gap-8">
+          <a href="{% url 'listing_edit' listing.pk %}" class="btn btn-outline btn-sm">✏️ Sửa tin</a>
+          <a href="{% url 'listing_delete' listing.pk %}" class="btn btn-danger btn-sm">🗑 Xoá tin</a>
+        </div>
+      {% endif %}
+    </div>
+
+    <!-- Right: Sidebar -->
+    <div>
+      <div class="sidebar-card">
+        <div style="font-weight:700;font-size:15px;margin-bottom:16px">Liên hệ người bán</div>
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+          <div class="avatar">{{ listing.owner.username|first|upper }}</div>
+          <div>
+            <div style="font-weight:600">{{ listing.owner.username }}</div>
+            <div style="font-size:12px;color:var(--muted)">Người đăng tin</div>
+          </div>
+        </div>
+        {% if user.is_authenticated %}
+          {% if user != listing.owner %}
+            <a href="{% url 'start_chat' listing.pk %}"
+               class="btn btn-primary btn-block mb-8"
+               style="font-size:15px;padding:11px">
+              💬 Nhắn tin với người bán
+            </a>
+            <form method="post" action="{% url 'toggle_save' listing.pk %}">
+              {% csrf_token %}
+              <button type="submit" class="btn {% if is_saved %}btn-outline{% else %}btn-gold{% endif %} btn-block">
+                {% if is_saved %}💔 Bỏ lưu{% else %}❤️ Lưu tin{% endif %}
+              </button>
+            </form>
+          {% endif %}
+        {% else %}
+          <a href="{% url 'login' %}?next={{ request.path }}" class="btn btn-primary btn-block">
+            Đăng nhập để nhắn tin
+          </a>
+        {% endif %}
+
+        <hr class="divider">
+        <div style="font-size:12px;color:var(--muted)">
+          Đăng ngày {{ listing.created_at|date:"d/m/Y" }}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Related -->
+  {% if related %}
+    <hr class="divider" style="margin-top:40px">
+    <div class="section-title mb-8">Tin rao cùng khu vực</div>
+    <div class="grid-3">
+      {% for l in related %}
+      <a href="{% url 'listing_detail' l.pk %}" style="text-decoration:none;color:inherit">
+        <div class="card">
+          {% if l.image %}<img class="card-img" src="{{ l.image.url }}" alt="">
+          {% else %}<div class="card-img-placeholder" style="height:130px">🏡</div>{% endif %}
+          <div class="card-body">
+            <div class="card-title">{{ l.title }}</div>
+            <div class="card-price">{{ l.price }} tỷ</div>
+            <div class="card-meta">📐 {{ l.area }}m² · 📍 {{ l.city }}</div>
+          </div>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

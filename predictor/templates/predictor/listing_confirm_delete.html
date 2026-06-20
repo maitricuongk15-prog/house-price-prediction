@@ -1,0 +1,22 @@
+{% extends 'predictor/base.html' %}
+{% block title %}Xoá tin rao{% endblock %}
+
+{% block content %}
+<div class="container page">
+  <div class="form-card" style="text-align:center;max-width:480px">
+    <div style="font-size:48px;margin-bottom:16px">🗑</div>
+    <div class="section-title">Ẩn tin rao này?</div>
+    <p style="color:var(--muted);margin:12px 0 24px">
+      Tin <strong>{{ listing.title }}</strong> sẽ bị ẩn khỏi danh sách.<br>
+      Bạn có thể khôi phục lại trong trang hồ sơ.
+    </p>
+    <form method="post">
+      {% csrf_token %}
+      <div class="flex gap-8" style="justify-content:center">
+        <button type="submit" class="btn btn-danger">Xác nhận ẩn</button>
+        <a href="{% url 'listing_detail' listing.pk %}" class="btn btn-outline">Huỷ</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

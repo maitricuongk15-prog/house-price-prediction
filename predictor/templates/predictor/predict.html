@@ -1,0 +1,138 @@
+{% extends 'predictor/base.html' %}
+{% block title %}Dự đoán giá nhà{% endblock %}
+
+{% block content %}
+<div class="container page">
+  <div class="text-center mb-24">
+    <div class="section-title" style="font-size:28px">🔮 Dự đoán giá nhà bằng AI</div>
+    <div class="section-sub">Nhập thông tin căn nhà – mô hình Gradient Boosting sẽ ước tính giá thị trường</div>
+  </div>
+
+  <div class="form-card">
+    <form method="post" id="predict-form">
+      {% csrf_token %}
+      <div class="form-grid">
+
+        <div class="form-group full">
+          <label>{{ form.property_type.label }}</label>
+          {{ form.property_type }}
+        </div>
+
+        <div class="form-group">
+          <label>{{ form.area.label }}</label>
+          {{ form.area }}
+          {% if form.area.errors %}<ul class="errorlist">{% for e in form.area.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+        </div>
+
+        <div class="form-group">
+          <label>{{ form.city.label }}</label>
+          {{ form.city }}
+        </div>
+
+        <div class="form-group field-house">
+          <label>{{ form.floors.label }}</label>
+          {{ form.floors }}
+          {% if form.floors.errors %}<ul class="errorlist">{% for e in form.floors.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+        </div>
+
+        <div class="form-group field-house field-apartment">
+          <label>{{ form.bedrooms.label }}</label>
+          {{ form.bedrooms }}
+          {% if form.bedrooms.errors %}<ul class="errorlist">{% for e in form.bedrooms.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+        </div>
+
+        <div class="form-group field-house field-apartment">
+          <label>{{ form.bathrooms.label }}</label>
+          {{ form.bathrooms }}
+          {% if form.bathrooms.errors %}<ul class="errorlist">{% for e in form.bathrooms.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+        </div>
+
+        <div class="form-group">
+          <label>{{ form.legal_status.label }}</label>
+          {{ form.legal_status }}
+        </div>
+
+        <div class="form-group full">
+          <label>{{ form.furniture.label }}</label>
+          {{ form.furniture }}
+        </div>
+
+      </div>
+
+      <div id="land-warning" class="mt-16" style="background:var(--gold-lt);border:1px solid #ecd8a3;border-radius:8px;padding:12px 16px;font-size:13px;color:#92680d;display:none">
+        ℹ️ Mô hình ML hiện chưa hỗ trợ định giá đất nền — model được train chủ yếu trên nhà có phòng ở.
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-block mt-24" style="font-size:16px;padding:13px">
+        🔮 Dự đoán ngay
+      </button>
+    </form>
+
+    {% if result %}
+      {% if result.price is not None %}
+      <div class="result-box">
+        <div style="font-size:14px;color:var(--muted);margin-bottom:8px">
+          Ước tính giá cho căn nhà {{ result.area }}m² tại {{ result.city }}
+        </div>
+        <div class="result-price">~ {{ result.price }} tỷ VNĐ</div>
+        <div class="result-label">Kết quả từ mô hình Machine Learning (GBR)</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:12px">
+          ⚠️ Giá mang tính tham khảo, sai số trung bình ~1.26 tỷ VNĐ
+        </div>
+        <div class="mt-16">
+          <a href="{% url 'listing_list' %}" class="btn btn-outline btn-sm">
+            Xem nhà đang bán cùng khu vực →
+          </a>
+        </div>
+      </div>
+      {% else %}
+      <div class="result-box" style="background:var(--gold-lt);border-color:#ecd8a3">
+        <div style="font-size:32px">🚧</div>
+        <div class="result-label" style="margin-top:8px">
+          Mô hình ML hiện chưa hỗ trợ định giá <strong>đất nền</strong>.<br>
+          Vui lòng tham khảo giá thị trường khu vực hoặc thử lại với loại BĐS khác.
+        </div>
+      </div>
+      {% endif %}
+    {% endif %}
+  </div>
+
+  <!-- Gợi ý sau dự đoán -->
+  {% if not result %}
+  <div style="max-width:640px;margin:32px auto 0;text-align:center">
+    <div style="color:var(--muted);font-size:13px">
+      💡 Muốn đăng bán nhà? Hệ thống sẽ tự động gợi ý giá phù hợp khi bạn
+      <a href="{% url 'listing_create' %}">đăng tin</a>.
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+<script>
+const FIELD_MAP = {
+  nha_pho:  ['field-house'],
+  biet_thu: ['field-house'],
+  chung_cu: ['field-apartment'],
+  dat_nen:  [],
+};
+
+const typeSelect = document.getElementById('id_property_type');
+const allGroups   = document.querySelectorAll('.form-group[class*="field-"]');
+const landWarning = document.getElementById('land-warning');
+
+function updatePredictFields() {
+  const selected = typeSelect.value;
+  const showClasses = FIELD_MAP[selected] || [];
+
+  allGroups.forEach(group => {
+    const matches = showClasses.some(cls => group.classList.contains(cls));
+    group.style.display = matches ? '' : 'none';
+  });
+
+  landWarning.style.display = selected === 'dat_nen' ? '' : 'none';
+}
+
+typeSelect.addEventListener('change', updatePredictFields);
+updatePredictFields();
+</script>
+{% endblock %}

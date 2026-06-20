@@ -1,0 +1,76 @@
+{% extends 'predictor/base.html' %}
+{% block title %}Trang chủ{% endblock %}
+
+{% block content %}
+<section class="hero">
+  <div class="container">
+    <h1>Định giá nhà bằng AI</h1>
+    <p>Nhập thông tin – nhận ngay ước tính giá từ mô hình Machine Learning<br>được huấn luyện trên 30.000+ bất động sản toàn quốc</p>
+    <div class="hero-actions">
+      <a href="{% url 'predict' %}" class="btn btn-primary" style="font-size:15px;padding:12px 28px">
+        🔮 Dự đoán giá ngay
+      </a>
+      <a href="{% url 'listing_list' %}" class="btn btn-outline" style="font-size:15px;padding:12px 28px">
+        🏘 Xem bất động sản đang bán
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- Stats bar -->
+<div style="background:#fff;border-bottom:1px solid var(--border)">
+  <div class="container" style="display:flex;gap:40px;padding:20px;flex-wrap:wrap">
+    <div><div style="font-size:24px;font-weight:800;color:var(--green)">30.000+</div><div style="font-size:13px;color:var(--muted)">Dữ liệu huấn luyện</div></div>
+    <div><div style="font-size:24px;font-weight:800;color:var(--green)">13</div><div style="font-size:13px;color:var(--muted)">Tỉnh thành</div></div>
+    <div><div style="font-size:24px;font-weight:800;color:var(--green)">1.26 tỷ</div><div style="font-size:13px;color:var(--muted)">Sai số trung bình (MAE)</div></div>
+    <div><div style="font-size:24px;font-weight:800;color:var(--green)">GBR</div><div style="font-size:13px;color:var(--muted)">Gradient Boosting Model</div></div>
+  </div>
+</div>
+
+<!-- Tin rao mới nhất -->
+<div class="container page">
+  <div class="flex-between mb-24">
+    <div>
+      <div class="section-title">🏠 Bất động sản mới đăng</div>
+      <div class="section-sub">Tin rao mới nhất từ người dùng</div>
+    </div>
+    <a href="{% url 'listing_list' %}" class="btn btn-outline btn-sm">Xem tất cả →</a>
+  </div>
+
+  {% if listings %}
+    <div class="grid-3">
+      {% for l in listings %}
+      <a href="{% url 'listing_detail' l.pk %}" style="text-decoration:none;color:inherit">
+        <div class="card">
+          {% if l.image %}
+            <img class="card-img" src="{{ l.image.url }}" alt="{{ l.title }}">
+          {% else %}
+            <div class="card-img-placeholder">🏡</div>
+          {% endif %}
+          <div class="card-body">
+            <div class="card-title">{{ l.title }}</div>
+            <div class="card-price">{{ l.price }} tỷ</div>
+            {% if l.predicted_price %}
+              <div class="mt-4">
+                <span class="ml-tag">🤖 ML: {{ l.predicted_price }} tỷ</span>
+              </div>
+            {% endif %}
+            <div class="card-meta">
+              <span>📐 {{ l.area }}m²</span>
+              <span>🛏 {{ l.bedrooms }} PN</span>
+              <span>🚿 {{ l.bathrooms }} PT</span>
+            </div>
+            <div class="card-city">📍 {{ l.city }}</div>
+          </div>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="empty-state">
+      <div class="icon">🏗</div>
+      <p>Chưa có tin rao nào. <a href="{% url 'listing_create' %}">Đăng tin đầu tiên!</a></p>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}
